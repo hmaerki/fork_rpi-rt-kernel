@@ -2,24 +2,24 @@
 # do not define PLATFORM32 or set it to null if you're building for newer platforms, i.e. Pi 3, Pi 3+, Pi 4, Pi 400, Pi Zero 2 W, Pi CM3, Pi CM3+, Pi CM4
 FROM ubuntu:20.04
 
-ENV LINUX_KERNEL_VERSION=5.15
-ENV LINUX_KERNEL_BRANCH=rpi-${LINUX_KERNEL_VERSION}.y
-
-ENV TZ=Europe/Copenhagen
+ENV TZ=Europe/Zurich
 RUN ln -snf /usr/share/zoneinfo/$TZ /etc/localtime && echo $TZ > /etc/timezone
 
-RUN apt-get update
-RUN apt-get install -y git make gcc bison flex libssl-dev bc ncurses-dev kmod
-RUN apt-get install -y crossbuild-essential-arm64 crossbuild-essential-armhf
-RUN apt-get install -y wget zip unzip fdisk nano curl xz-utils
+RUN apt-get update \
+  && apt-get install -y git make gcc bison flex libssl-dev bc ncurses-dev kmod \
+  crossbuild-essential-arm64 crossbuild-essential-armhf \
+  wget zip unzip fdisk nano curl xz-utils
+
+ENV LINUX_KERNEL_VERSION=6.1
+ENV LINUX_KERNEL_BRANCH=rpi-${LINUX_KERNEL_VERSION}.y
 
 WORKDIR /rpi-kernel
 RUN git clone https://github.com/raspberrypi/linux.git -b ${LINUX_KERNEL_BRANCH} --depth=1
 WORKDIR /rpi-kernel/linux
-RUN export PATCH=$(curl -s https://mirrors.edge.kernel.org/pub/linux/kernel/projects/rt/${LINUX_KERNEL_VERSION}/ | sed -n 's:.*<a href="\(.*\).patch.gz">.*:\1:p' | sort -V | tail -1) && \
-    echo "Downloading patch ${PATCH}" && \
-    curl https://mirrors.edge.kernel.org/pub/linux/kernel/projects/rt/${LINUX_KERNEL_VERSION}/${PATCH}.patch.gz --output ${PATCH}.patch.gz && \
-    gzip -cd /rpi-kernel/linux/${PATCH}.patch.gz | patch -p1 --verbose
+RUN export PATCH=$(curl -s https://mirrors.edge.kernel.org/pub/linux/kernel/projects/rt/${LINUX_KERNEL_VERSION}/ | sed -n 's:.*<a href="\(.*\).patch.gz">.*:\1:p' | sort -V | tail -1) 
+RUN echo "Downloading patch ${PATCH}"
+RUN curl https://mirrors.edge.kernel.org/pub/linux/kernel/projects/rt/${LINUX_KERNEL_VERSION}/${PATCH}.patch.gz --output ${PATCH}.patch.gz
+RUN gzip -cd /rpi-kernel/linux/${PATCH}.patch.gz | patch -p1 --verbose
 
 ARG PLATFORM32
 
